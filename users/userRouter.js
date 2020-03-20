@@ -1,6 +1,7 @@
 const express = require('express');
 
 const User = require('./userDb.js');
+const Posts = require('../posts/postDb.js')
 
 const router = express.Router();
 
@@ -18,8 +19,19 @@ router.post('/',validateUser, (req, res) => {
 
 
 //
-router.post('/:id/posts', (req, res) => {
+router.post('/:id/posts', validateUserId , (req, res) => {
   // do your magic!
+  const postInfo = { ...req.body, user_id: req.params.id }
+
+  Posts.insert(postInfo)
+    .then(post => {
+      res.status(201).json(post)
+    })
+    .catch( err => {
+      res.status(500).json({ message: "Error posting the post", err})
+    })
+
+  
 });
 
 
@@ -73,14 +85,14 @@ router.delete('/:id', validateUserId, (req, res) => {
 });
 
 
-//
+// WORKING
 router.put('/:id', [validateUser, validateUserId], (req, res) => {
   // do your magic!
   User.update(req.params.id, req.body)
     .then(user =>  {
       if(user) {
         res.status(200).json(user);
-      } else {
+      } else if( !req.params.id ) {
         res.status(404).json({ message: "The user could not be found"})
       }
     })
@@ -129,6 +141,7 @@ function validatePost(req, res, next) {
     next();
   }else if (!body.text) {
     res.status(400).json({ message: "missing required text field"});
+  } else {
     next();
   }
 }
